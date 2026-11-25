@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "npm run pendo:build-id && vite",
+    "build": "npm run pendo:build-id && tsc -b && vite build && npm run pendo:register",
+    "preview": "vite preview",
+    "pendo:build-id": "pendo build create --manifest=.pendo-build/manifest.json --output=src/pendo-build.js",
+    "pendo:register": "pendo build register --manifest=.pendo-build/manifest.json --apiKey=f59ab641-f8df-445a-b7bf-ec86b369dd89 --env=io --endpoint=https://data.pendo-dev.pendo-dev.com"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -14,6 +16,7 @@
     "react-router-dom": "^6.30.3"
   },
   "devDependencies": {
+    "@pendo/web-sdk": "^2.352.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

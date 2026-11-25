@@ -5,3 +5,6 @@ build/
 .env.local
 .DS_Store
 *.tsbuildinfo
+# Pendo build tracking: generated per build, never committed or published
+.pendo-build/
+web/src/pendo-build.js
