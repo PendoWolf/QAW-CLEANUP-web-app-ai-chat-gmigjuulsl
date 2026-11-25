@@ -11,6 +11,15 @@ function newConversationId(): string {
   return crypto.randomUUID();
 }
 
+const PENDO_AGENT_ID = "APj-GriCqZrNzwpmXnO6ujGEYuM";
+
+type PendoAgentEvent = "prompt" | "agent_response" | "user_reaction";
+
+/** Sends a Pendo Track Agent event, if the Pendo agent is loaded on the page. */
+function trackAgent(eventType: PendoAgentEvent, metadata: PendoAgentMetadata) {
+  window.pendo?.trackAgent?.(eventType, metadata);
+}
+
 /**
  * AI chat panel for the Tripwise Assistant, an LLM-powered travel agent.
  * Each prompt the user sends goes to the Tripwise API with the conversation so
@@ -23,10 +32,18 @@ export function AssistantPanel({ onClose }: { onClose: () => void }) {
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async (text: string) => {
+  const send = async (text: string, suggestedPrompt = false) => {
     const prompt = text.trim();
     if (prompt === "" || thinking) return;
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: prompt };
+    trackAgent("prompt", {
+      agentId: PENDO_AGENT_ID,
+      conversationId,
+      messageId: userMessage.id,
+      content: prompt,
+      suggestedPrompt,
+      fileUploaded: false,
+    });
     const conversation = [...messages, userMessage];
     setMessages(conversation);
     setDraft("");
@@ -35,6 +52,12 @@ export function AssistantPanel({ onClose }: { onClose: () => void }) {
     try {
       const reply = await sendAssistantMessage(conversationId, conversation);
       setMessages((current) => [...current, reply.message]);
+      trackAgent("agent_response", {
+        agentId: PENDO_AGENT_ID,
+        conversationId: reply.conversationId || conversationId,
+        messageId: reply.message.id || `agent_response_${Date.now()}`,
+        content: reply.message.content,
+      });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -73,7 +96,7 @@ export function AssistantPanel({ onClose }: { onClose: () => void }) {
             Ask me anything about planning a trip.
             <div className="suggestions">
               {SUGGESTED_PROMPTS.map((prompt) => (
-                <button key={prompt} type="button" className="secondary" onClick={() => void send(prompt)}>
+                <button key={prompt} type="button" className="secondary" onClick={() => void send(prompt, true)}>
                   {prompt}
                 </button>
               ))}
